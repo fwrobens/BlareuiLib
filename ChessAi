@@ -37,7 +37,14 @@ function M.start(modules)
     end
 
     local function getThinkTime(clockText)
-        return math.random(100, 200)
+        local baseTimes = {
+            bullet = 250,
+            blitz = 750,
+            rapid = 1500,
+            casual = 2000,
+        }
+        local base = baseTimes[getGameType(clockText)] or 1000
+        return math.clamp(math.random(base - 100, base + 100), 50, 5000)
     end
 
     local function getFunction(funcName, moduleName)
