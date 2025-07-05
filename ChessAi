@@ -14,26 +14,6 @@ function M.start(modules)
     local Sunfish = localPlayer:WaitForChild("PlayerScripts").AI:WaitForChild("Sunfish")
     local ChessLocalUI = localPlayer:WaitForChild("PlayerScripts"):WaitForChild("ChessLocalUI")
 
-    local openings = {
-        ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w"] = "e2e4",
-        ["rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b"] = "c7c5",
-        ["rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b"] = "e7e5",
-        ["rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w"] = "g1f3",
-        ["rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b"] = "b8c6",
-        ["rnbqkbnr/pp1ppppp/2p5/8/4P3/5N2/PPPP1PPP/RNBQKB1R w"] = "d2d4",
-        ["rnbqkbnr/pppppppp/8/8/4P3/5N2/PPPP1PPP/RNBQKB1R b"] = "e7e6",
-        ["rnbqkbnr/pppp1ppp/8/4p3/3PP3/8/PPP2PPP/RNBQKBNR b"] = "d7d5",
-        ["rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b"] = "e7e5",
-        ["rnbqkbnr/pppppppp/8/8/4P3/2N5/PPPP1PPP/R1BQKBNR b"] = "g8f6",
-        ["rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b"] = "c7c6",
-        ["rnbqkbnr/pp1ppppp/2p5/8/2B5/5N2/PPPPPPPP/RNBQK2R b"] = "d7d6",
-        ["rnbqkbnr/pppppppp/8/8/4P3/3P4/PPP1PPPP/RNBQKBNR b"] = "e7e5",
-        ["rnbqkbnr/pppp1ppp/8/4p3/1b1PP3/8/PPP2PPP/RNBQKBNR w"] = "c2c3",
-        ["rnbqkbnr/pppppppp/8/8/2P5/3P4/PP2PPPP/RNBQKBNR b"] = "e7e5",
-    }
-
-    local performanceScore = 1.0
-
     local function getGameType(clockText)
         return config.CLOCK_NAME_MAPPING[clockText] or "unknown"
     end
@@ -56,26 +36,8 @@ function M.start(modules)
         end
     end
 
-    local function adjustThinkTime(base)
-        if performanceScore < 0.8 then
-            return base + 100
-        elseif performanceScore > 1.2 then
-            return base - 100
-        else
-            return base
-        end
-    end
-
-    local function getThinkTime(clockText)
-        local baseTimes = {
-            bullet = 250,
-            blitz = 750,
-            rapid = 1500,
-            casual = 2000,
-        }
-        local base = baseTimes[getGameType(clockText)] or 1000
-        base = adjustThinkTime(base)
-        return math.clamp(math.random(base - 100, base + 100), 50, 5000)
+    local function getThinkTime()
+        return 250
     end
 
     local function getFunction(funcName, moduleName)
@@ -148,28 +110,18 @@ function M.start(modules)
                     Fen = board.FEN.Value
 
                     if isLocalPlayersTurn() and Fen and state.aiRunning then
-                        local shortFen = Fen:match("^(.-) ?[%w-]* ?%d* ?%d*$")
-                        local bookMove = openings[shortFen]
-                        if bookMove then
-                            pcall(PlayMove, bookMove)
-                            nbMoves += 1
-                            randWaitFromGameType = getSmartWait(clockText, nbMoves)
-                            task.wait(randWaitFromGameType)
-                        else
-                            task.spawn(function()
-                                local thinkTime = getThinkTime(clockText)
-                                local success, result = pcall(GetBestMove, nil, Fen, thinkTime)
+                        task.spawn(function()
+                            local success, result = pcall(GetBestMove, nil, Fen, getThinkTime())
 
-                                if success and result then
-                                    move = result
-                                    task.wait(randWaitFromGameType)
-                                    pcall(PlayMove, move)
+                            if success and result then
+                                move = result
+                                task.wait(randWaitFromGameType)
+                                pcall(PlayMove, move)
 
-                                    nbMoves += 1
-                                    randWaitFromGameType = getSmartWait(clockText, nbMoves)
-                                end
-                            end)
-                        end
+                                nbMoves += 1
+                                randWaitFromGameType = getSmartWait(clockText, nbMoves)
+                            end
+                        end)
                     end
                 end
                 task.wait(0.2)
