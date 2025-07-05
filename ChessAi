@@ -27,22 +27,22 @@ function M.start(modules)
         local baseWait = math.random(configRange.min, configRange.max)
         local gameType = getGameType(clockText)
 
-        if moveCount < 10 then
-            return baseWait * 0.5
-        elseif moveCount < 30 then
-            return (gameType ~= "bullet") and baseWait * 2.0 or baseWait
+        if moveCount < 5 then
+            return baseWait * 0.25
+        elseif moveCount < 20 then
+            return (gameType ~= "bullet") and baseWait * 1.5 or baseWait * 0.8
         else
-            return baseWait * 1.1
+            return baseWait * 0.9
         end
     end
 
     local function getThinkTime(clockText)
         return ({
-            bullet = 250,
-            blitz = 750,
-            rapid = 1500,
-            casual = 2000,
-        })[getGameType(clockText)] or 1000
+            bullet = 150,
+            blitz = 650,
+            rapid = 1400,
+            casual = 1900,
+        })[getGameType(clockText)] or 900
     end
 
     local function getFunction(funcName, moduleName)
