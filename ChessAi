@@ -37,12 +37,7 @@ function M.start(modules)
     end
 
     local function getThinkTime(clockText)
-        return ({
-            bullet = 150,
-            blitz = 650,
-            rapid = 1400,
-            casual = 1900,
-        })[getGameType(clockText)] or 900
+        return math.random(100, 200)
     end
 
     local function getFunction(funcName, moduleName)
