@@ -36,6 +36,15 @@ function M.start(modules)
         end
     end
 
+    local function getThinkTime(clockText)
+        return ({
+            bullet = 250,
+            blitz = 750,
+            rapid = 1500,
+            casual = 2000,
+        })[getGameType(clockText)] or 1000
+    end
+
     local function getFunction(funcName, moduleName)
         if state[funcName] then return state[funcName] end
 
@@ -106,15 +115,22 @@ function M.start(modules)
                     Fen = board.FEN.Value
 
                     if isLocalPlayersTurn() and Fen and state.aiRunning then
-                        local success, result = pcall(GetBestMove, nil, Fen, 5000)
-                        if success and result then
-                            move = result
-                            task.wait(randWaitFromGameType)
-                            pcall(PlayMove, move)
+                        task.spawn(function()
+                            local thinkTime = getThinkTime(clockText)
+                            local startTime = tick()
+                            local success, result = pcall(GetBestMove, nil, Fen, thinkTime)
+                            local elapsed = tick() - startTime
 
-                            nbMoves += 1
-                            randWaitFromGameType = getSmartWait(clockText, nbMoves)
-                        end
+                            if success and result then
+                                move = result
+                                local delay = math.max(0, randWaitFromGameType - elapsed)
+                                task.wait(delay)
+                                pcall(PlayMove, move)
+
+                                nbMoves += 1
+                                randWaitFromGameType = getSmartWait(clockText, nbMoves)
+                            end
+                        end)
                     end
                 end
                 task.wait(0.2)
